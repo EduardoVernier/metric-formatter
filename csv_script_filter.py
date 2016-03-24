@@ -2,6 +2,9 @@ import sys
 import csv
 from os import listdir
 from os.path import isfile, join
+from statistics import mean
+from statistics import stdev
+
 
 header_temp = []
 attrib_index = []
@@ -40,23 +43,24 @@ def read_metrics ():
                     for j in range (1, len(item)):
                         if (item[j] != ''):
                             current_item.append(item[j])
-                            if (n_items == 0):
+                            if (n_items == 0): # Fill important attributes list when meets first valid item
                                 attrib_index.append(j)
                     n_items += 1
-                    current_item.append('0')
+                    current_item = [current_item[0]] + [float(k) for k in current_item[1:]]
+                    current_item.append(0)
+                    #print (current_item)
                     list_of_items.append(current_item[:])
 
 
                 elif (cur_file > 0):
-                    if id_dict.has_key(item[1]):
+                    if item[1] in id_dict:
                         n_items += 1
                         id_dict[item[1]] += 1
                         for j in range (1, len(item)):
                             if (item[j] != ''):
                                 current_item.append(item[j])
-                                if (n_items == 0):
-                                    attrib_index.append(j)
-                        current_item.append('0')
+                        current_item = [current_item[0]] + [float(k) for k in current_item[1:]]
+                        current_item.append(0)
                         list_of_items.append(current_item[:])
 
                 current_item = []
@@ -71,11 +75,39 @@ def read_metrics ():
 # Filter dict to keep only classes that were present in all csv files
 def filter_items(n_files):
     global id_dict
-    return {k:v for (k,v) in id_dict.items() if v == n_files-1}
+    global output_list
+    id_dict = {k:v for (k,v) in id_dict.items() if v == n_files-1}
+
+    for file_item in output_list:
+        for item in file_item:
+            if (item[0] not in id_dict):
+                file_item.remove(item)
+
+
+def normalize_items():
+    global attrib_index
+    global output_list
+
+    for attrib in range (1,len(attrib_index)):
+        cur_attrib_values = []
+        for file_item in output_list:
+            for item in file_item:
+                cur_attrib_values.append(item[attrib])
+
+        mean_attrib = mean(cur_attrib_values)
+        stdev_attrib = stdev(cur_attrib_values)
+        if (mean_attrib == 0 or stdev_attrib == 0):
+            continue
+
+        # print (mean_attrib, stdev_attrib)
+        for file_item in output_list:
+            for item in file_item:
+                item[attrib] = (item[attrib] - mean_attrib) / stdev_attrib
+
 
 
 # Write .data files
-def write_items(n_files, filtered_dict, repo_name):
+def write_items(n_files, repo_name):
     global header_temp
     global attrib_index
     global output_list
@@ -89,17 +121,16 @@ def write_items(n_files, filtered_dict, repo_name):
         new_filename = repo_name + "." + str(j) + ".data"
         f = open('output/'+ new_filename, "w")
         f.write("DY\n")
-        f.write("%d\n" % (len(filtered_dict)))
+        f.write("%d\n" % (len(id_dict)))
         f.write("%d\n" % (len(header)))
 
         for metric in header:
             f.write("%s;" % (metric))
 
         for item in output_list[j]:
-            if (item[0] in filtered_dict):
-                f.write("\n")
-                for attr in item:
-                    f.write("%s;" % (attr))
+            f.write("\n")
+            for attr in item:
+                f.write("%s;" % (attr))
 
         f.close()
         j += 1
@@ -108,8 +139,9 @@ def write_items(n_files, filtered_dict, repo_name):
 def main():
     repo_name = sys.argv[1]
     n_files = read_metrics()
-    filtered_dict = filter_items(n_files)
-    write_items(n_files, filtered_dict, repo_name)
+    filter_items(n_files)
+    normalize_items()
+    write_items(n_files, repo_name)
 
 if __name__ == "__main__":
     main()
