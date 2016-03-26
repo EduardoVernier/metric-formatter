@@ -47,8 +47,6 @@ def read_metrics ():
                                 attrib_index.append(j)
                     n_items += 1
                     current_item = [current_item[0]] + [float(k) for k in current_item[1:]]
-                    current_item.append(0)
-                    #print (current_item)
                     list_of_items.append(current_item[:])
 
 
@@ -60,7 +58,6 @@ def read_metrics ():
                             if (item[j] != ''):
                                 current_item.append(item[j])
                         current_item = [current_item[0]] + [float(k) for k in current_item[1:]]
-                        current_item.append(0)
                         list_of_items.append(current_item[:])
 
                 current_item = []
@@ -72,16 +69,13 @@ def read_metrics ():
 
     return n_files
 
+from itertools import filterfalse
 # Filter dict to keep only classes that were present in all csv files
 def filter_items(n_files):
     global id_dict
     global output_list
     id_dict = {k:v for (k,v) in id_dict.items() if v == n_files-1}
-
-    for file_item in output_list:
-        for item in file_item:
-            if (item[0] not in id_dict):
-                file_item.remove(item)
+    output_list = [list(filterfalse(lambda item: item[0] not in id_dict, rev)) for rev in output_list]
 
 
 def normalize_items():
@@ -131,6 +125,7 @@ def write_items(n_files, repo_name):
             f.write("\n")
             for attr in item:
                 f.write("%s;" % (attr))
+            f.write("0") ## class info
 
         f.close()
         j += 1
