@@ -118,8 +118,7 @@ def write_items(n_files, repo_name):
         f.write("%d\n" % (len(id_dict)))
         f.write("%d\n" % (len(header)))
 
-        for metric in header:
-            f.write("%s;" % (metric))
+        f.write(';'.join(header))
 
         for item in output_list[j]:
             f.write("\n")
