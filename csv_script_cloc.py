@@ -20,7 +20,7 @@ for filename in csv_files:
             loc.append(int(item[2])+int(item[3])+int(item[4]))
     f.close()
 
-    f = open('output/'+ 'calcuta.'+ filename, "w")
+    f = open('output/'+ 'bdb.'+ filename, "w")
     f.write("id,weight\n")
         
     for j in range(0, len(ids)):
